@@ -22,3 +22,4 @@ sanitize:
 
 clean:
 	rm -f huffman test-huffman test-huffman-sanitize
+	rm -rf *.dSYM

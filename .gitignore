@@ -9,3 +9,6 @@ venv/
 build/
 sanitize/
 *.dSYM/
+huffman-coding/huffman
+huffman-coding/test-huffman
+huffman-coding/test-huffman-sanitize

@@ -171,7 +171,11 @@ int huffman_generate_codes_top_down(const HuffmanTree *tree, HuffmanCodeTable *t
         return HUFFMAN_ERROR_INVALID_ARGUMENT;
     }
     huffman_code_table_free(table);
-    return generate_codes_top_down_from_node(tree, tree->root, path, 0, table);
+    int result = generate_codes_top_down_from_node(tree, tree->root, path, 0, table);
+    if (result != HUFFMAN_OK) {
+        huffman_code_table_free(table);
+    }
+    return result;
 }
 
 int huffman_generate_codes_bottom_up(const HuffmanTree *tree, HuffmanCodeTable *table) {
