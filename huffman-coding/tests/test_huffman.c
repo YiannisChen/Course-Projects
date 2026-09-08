@@ -171,6 +171,24 @@ static int test_deterministic_randomized_round_trips(void) {
     return 0;
 }
 
+static int test_dot_export_includes_labeled_edges(void) {
+    const unsigned char input[] = "abracadabra";
+    HuffmanTree *tree = NULL;
+    FILE *dot = tmpfile();
+    char output[4096] = {0};
+    ASSERT_TRUE(dot != NULL);
+    ASSERT_TRUE(huffman_build(input, sizeof(input) - 1, &tree) == HUFFMAN_OK);
+    ASSERT_TRUE(huffman_export_dot(tree, dot) == HUFFMAN_OK);
+    rewind(dot);
+    ASSERT_TRUE(fread(output, 1, sizeof(output) - 1, dot) > 0);
+    ASSERT_TRUE(strstr(output, "digraph HuffmanTree") != NULL);
+    ASSERT_TRUE(strstr(output, "label=\"0\"") != NULL);
+    ASSERT_TRUE(strstr(output, "label=\"1\"") != NULL);
+    fclose(dot);
+    huffman_tree_free(tree);
+    return 0;
+}
+
 int main(void) {
     const unsigned char abracadabra[] = "abracadabra";
     const unsigned char hello[] = "hello world";
@@ -194,6 +212,7 @@ int main(void) {
     ASSERT_TRUE(test_deterministic_equal_frequency_codes() == 0);
     ASSERT_TRUE(test_single_symbol_stream_validation() == 0);
     ASSERT_TRUE(test_deterministic_randomized_round_trips() == 0);
+    ASSERT_TRUE(test_dot_export_includes_labeled_edges() == 0);
 
     puts("Huffman tests passed");
     return 0;

@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 
 enum {
     HUFFMAN_OK = 0,
@@ -26,6 +27,7 @@ int huffman_generate_codes_bottom_up(const HuffmanTree *tree, HuffmanCodeTable *
 bool huffman_code_tables_equal(const HuffmanCodeTable *first, const HuffmanCodeTable *second);
 int huffman_encode(const unsigned char *input, size_t input_length, const HuffmanCodeTable *table, char **bits_out);
 int huffman_decode(const HuffmanTree *tree, const char *bits, unsigned char **output_out, size_t *output_length_out);
+int huffman_export_dot(const HuffmanTree *tree, FILE *output);
 void huffman_code_table_free(HuffmanCodeTable *table);
 void huffman_tree_free(HuffmanTree *tree);
 

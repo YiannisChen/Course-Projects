@@ -9,6 +9,11 @@ venv/
 build/
 sanitize/
 *.dSYM/
+.pytest_cache/
+huffman-coding/huffman
+huffman-coding/huffman-dot
+huffman-coding/test-huffman
+huffman-coding/test-huffman-sanitize
 huffman-coding/huffman
 huffman-coding/test-huffman
 huffman-coding/test-huffman-sanitize

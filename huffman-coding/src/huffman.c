@@ -320,3 +320,22 @@ int huffman_decode(const HuffmanTree *tree, const char *bits, unsigned char **ou
     *output_length_out = output_length;
     return HUFFMAN_OK;
 }
+
+int huffman_export_dot(const HuffmanTree *tree, FILE *output) {
+    if (tree == NULL || output == NULL) return HUFFMAN_ERROR_INVALID_ARGUMENT;
+    fprintf(output, "digraph HuffmanTree {\n  node [fontname=Helvetica];\n");
+    for (size_t index = 0; index < tree->node_count; ++index) {
+        const HuffmanNode *node = &tree->nodes[index];
+        if (is_leaf(node)) {
+            unsigned char symbol = (unsigned char)node->symbol;
+            if (symbol >= 32 && symbol <= 126 && symbol != '\\' && symbol != '\"')
+                fprintf(output, "  n%zu [shape=box,label=\"%c\\nfreq=%zu\"];\n", index, symbol, node->frequency);
+            else
+                fprintf(output, "  n%zu [shape=box,label=\"0x%02X\\nfreq=%zu\"];\n", index, symbol, node->frequency);
+        } else {
+            fprintf(output, "  n%zu [label=\"freq=%zu\"];\n", index, node->frequency);
+            fprintf(output, "  n%zu -> n%d [label=\"0\"];\n  n%zu -> n%d [label=\"1\"];\n", index, node->left, index, node->right);
+        }
+    }
+    return fputs("}\n", output) == EOF ? HUFFMAN_ERROR_INVALID_ARGUMENT : HUFFMAN_OK;
+}
