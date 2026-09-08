@@ -8,3 +8,4 @@ venv/
 *.exe
 build/
 sanitize/
+*.dSYM/
