@@ -39,7 +39,7 @@ def analyze_clusters(grid_features, labels):
             'weekend_ratio': 'mean',
             'peak_hour': 'mean',
             'avg_victim_age': 'mean',
-            'most_common_severity': lambda x: x.value_counts().index[0]
+            'most_common_age_group': lambda x: x.value_counts().index[0]
         }).reset_index()
         cluster_stats.columns = [
             'cluster',
@@ -49,7 +49,7 @@ def analyze_clusters(grid_features, labels):
             'avg_weekend_ratio',
             'avg_peak_hour',
             'avg_victim_age',
-            'most_common_severity'
+            'most_common_age_group'
         ]
         logger.info("Cluster analysis completed successfully")
         return cluster_stats
@@ -69,9 +69,9 @@ def get_cluster_characteristics(cluster_stats):
                 cluster_type = "Nightlife Hotspot"
             elif row['avg_weekend_ratio'] < 0.3 and row['avg_peak_hour'] in [8, 17]:
                 cluster_type = "Commuter Hotspot"
-            elif row['most_common_severity'] == 'Child':
+            elif row['most_common_age_group'] == 'Child':
                 cluster_type = "School Zone Hotspot"
-            elif row['most_common_severity'] == 'Elderly':
+            elif row['most_common_age_group'] == 'Elderly':
                 cluster_type = "Senior Zone Hotspot"
             else:
                 cluster_type = "General Hotspot"

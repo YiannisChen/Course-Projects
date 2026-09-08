@@ -57,9 +57,9 @@ def calculate_grid_features(
             'DR Number': 'count',  # Total accidents
             'Victim Age': 'mean',  # Average victim age
             'IsWeekend': 'mean',   # Weekend accident ratio
-            'Hour': lambda x: pd.Series.mode(x)[0] if not x.empty else None,  # Most common hour
-            'SeverityNum': 'mean',  # Average severity (numeric)
-            'Severity': lambda x: x.value_counts().index[0] if not x.empty else None  # Most common severity (category)
+            'Hour': lambda x: x.mode().iloc[0] if not x.empty and not x.mode().empty else None,
+            'AgeGroupNum': 'mean',
+            'AgeGroup': lambda x: x.value_counts().index[0] if not x.empty else None,
         }).reset_index()
         
         # Add grid center coordinates
@@ -73,8 +73,8 @@ def calculate_grid_features(
             'Victim Age': 'avg_victim_age',
             'IsWeekend': 'weekend_ratio',
             'Hour': 'peak_hour',
-            'SeverityNum': 'avg_severity',
-            'Severity': 'most_common_severity'
+            'AgeGroupNum': 'avg_age_group',
+            'AgeGroup': 'most_common_age_group'
         })
         
         # Remove any remaining rows with NaN values

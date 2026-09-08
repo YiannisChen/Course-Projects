@@ -52,7 +52,7 @@ def main():
                     return
                 eps = st.sidebar.slider("DBSCAN Epsilon", 0.001, 0.5, 0.05, step=0.001)
                 min_samples = st.sidebar.slider("Minimum Samples", 1, 50, 3)
-                X, feature_names = create_feature_matrix(grid_features, features=['accident_count', 'avg_severity', 'weekend_ratio', 'peak_hour'])
+                X, feature_names = create_feature_matrix(grid_features, features=['accident_count', 'avg_age_group', 'weekend_ratio', 'peak_hour'])
                 coords = grid_features[['grid_lat', 'grid_lon']].values
                 labels, dbscan = perform_clustering(X, coords, eps, min_samples)
                 grid_features['Cluster'] = labels
@@ -83,7 +83,7 @@ def main():
                 eps = st.sidebar.slider("DBSCAN Epsilon", 0.001, 0.5, 0.05, step=0.001)
                 min_samples = st.sidebar.slider("Minimum Samples", 1, 50, 3)
                 n_clusters = st.sidebar.slider("K-Means Clusters", 2, 20, 8)
-                X, feature_names = create_feature_matrix(grid_features, features=['accident_count', 'avg_severity', 'weekend_ratio', 'peak_hour'])
+                X, feature_names = create_feature_matrix(grid_features, features=['accident_count', 'avg_age_group', 'weekend_ratio', 'peak_hour'])
                 coords = grid_features[['grid_lat', 'grid_lon']].values
                 dbscan_labels, _ = perform_clustering(X, coords, eps, min_samples)
                 kmeans_labels, _ = perform_kmeans(X, n_clusters)
@@ -221,7 +221,7 @@ def main():
                 if cluster_type == 'grid':
                     cluster_stats = cluster_data.groupby('Cluster').agg({
                         'accident_count': 'sum',
-                        'avg_severity': 'mean',
+                        'avg_age_group': 'mean',
                         'weekend_ratio': 'mean'
                     })
                 else:

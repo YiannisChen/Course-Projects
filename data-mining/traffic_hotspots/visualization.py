@@ -103,7 +103,7 @@ def create_cluster_comparison(cluster_stats: pd.DataFrame, cluster_characteristi
     for col in cluster_stats.columns:
         if col.lower() in ['accident_count', 'total_accidents']:
             col_map['accident_count'] = col
-        if col.lower() in ['avg_severity', 'avg_severitynum']:
+        if col.lower() in ['avg_severity', 'avg_severitynum', 'avg_age_group']:
             col_map['avg_severity'] = col
         if col.lower() in ['weekend_ratio', 'avg_weekend_ratio']:
             col_map['weekend_ratio'] = col
@@ -224,7 +224,7 @@ def create_cluster_map(grid_features: pd.DataFrame) -> go.Figure:
             ),
             name=f'Cluster {cluster}',
             text=cluster_data.apply(
-                lambda row: f"Accidents: {row['accident_count']}<br>Severity: {row['avg_severity']:.2f}",
+                lambda row: f"Accidents: {row['accident_count']}<br>Age group: {row['avg_age_group']:.2f}",
                 axis=1
             ),
             hoverinfo='text'

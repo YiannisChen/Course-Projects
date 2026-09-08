@@ -33,7 +33,7 @@ def analyze_file(path: str | Path, algorithm: str = "kmeans", n_clusters: int = 
     grid_features = calculate_grid_features(prepared)
     if grid_features.empty:
         raise ValueError("No grid features could be calculated")
-    feature_columns = ["accident_count", "avg_severity", "weekend_ratio", "peak_hour"]
+    feature_columns = ["accident_count", "avg_age_group", "weekend_ratio", "peak_hour"]
     features, _ = create_feature_matrix(grid_features, feature_columns)
     if algorithm == "kmeans":
         if not 1 < n_clusters <= len(grid_features):
@@ -59,7 +59,7 @@ def main() -> int:
     arguments = parser.parse_args()
     try:
         summary = analyze_file(arguments.csv_path, arguments.algorithm, arguments.n_clusters)
-    except (OSError, ValueError, pd.errors.ParserError) as error:
+    except (OSError, ValueError, KeyError, pd.errors.ParserError) as error:
         parser.error(str(error))
     print(f"Input rows: {summary['input_rows']}")
     print(f"Processed rows: {summary['processed_rows']}")
