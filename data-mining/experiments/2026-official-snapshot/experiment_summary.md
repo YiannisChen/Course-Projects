@@ -2,9 +2,8 @@
 
 This directory records a reproduction on a fresh Los Angeles Open Data download
 on 2026-09-08. It is not a reconstruction of the original 2025 coursework
-snapshot. The 123,840,942-byte source CSV remains outside the repository at
-`/Users/yiannischen/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv`
-and is neither copied nor versioned here.
+snapshot. The 123,840,942-byte source CSV remains outside the repository and
+is neither copied nor versioned here.
 
 ## Dataset and preprocessing
 
@@ -59,11 +58,11 @@ record-level K-Means analysis.
 
 ## Reading the tables
 
-- `grid_sweep.csv` is the final DBSCAN feature space at the balanced
+- `final_grid_sweep.csv` is the final DBSCAN feature space at the balanced
   `eps=0.25`, `min_samples=5` setting.
-- `dbscan_epsilon_sweep.csv` and `dbscan_min_samples_sweep.csv` are final
+- `final_dbscan_eps_sweep.csv` and `final_min_samples_sweep.csv` are final
   DBSCAN feature-space scans on the complete snapshot.
-- `kmeans_k_sweep.csv` is a full-record K-Means scan; `sampled_silhouette` is
+- `final_kmeans_sweep.csv` is a full-record K-Means scan; `sampled_silhouette` is
   not a full-dataset metric.
 
 The experiments support algorithm-behaviour claims: fine grids retain more
