@@ -24,13 +24,6 @@ The 124 MB source CSV is intentionally not in this repository. It is a fresh
 2026 snapshot, not the original 2025 coursework input; therefore its results
 must not be presented as a reproduction of the archived 2025 figures.
 
-## Pipeline
-
-```text
-CSV -> coordinate/date validation -> temporal and descriptive age features
-    -> grid aggregation or record-level features -> clustering -> visualization
-```
-
 ## Interactive Analysis
 
 Run the original Streamlit interface locally:

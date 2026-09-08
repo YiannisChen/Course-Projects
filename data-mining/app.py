@@ -1,5 +1,5 @@
 """
-Main Streamlit application for Traffic Accident Hotspot Analysis.
+Main Streamlit application for LA Traffic Collision Pattern Analysis.
 """
 
 import streamlit as st
