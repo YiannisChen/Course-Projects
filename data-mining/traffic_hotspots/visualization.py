@@ -183,24 +183,37 @@ def create_time_series_plot(
         logger.error(f"Error creating time series plot: {str(e)}")
         raise
 
-# Create accident density heatmap
+# Create a collision-intensity map compatible with current MapLibre traces.
 def create_heatmap(grid_features: pd.DataFrame) -> go.Figure:
-    
-    fig = go.Figure(go.Densitymapbox(
+    marker_size = 6 + 18 * np.sqrt(
+        grid_features['accident_count'] / grid_features['accident_count'].max()
+    )
+    fig = go.Figure(go.Scattermap(
         lat=grid_features['grid_lat'],
         lon=grid_features['grid_lon'],
-        z=grid_features['accident_count'],
-        radius=10,
-        colorscale='Hot',
-        opacity=0.7
+        mode='markers',
+        marker=dict(
+            size=marker_size,
+            color=grid_features['accident_count'],
+            colorscale='Hot',
+            opacity=0.7,
+            showscale=True,
+            colorbar=dict(title='Collisions'),
+        ),
+        text=grid_features['accident_count'].map(lambda count: f'Collisions: {count}'),
+        hoverinfo='text',
     ))
     fig.update_layout(
-        mapbox_style="open-street-map",
-        mapbox_center_lat=grid_features['grid_lat'].mean(),
-        mapbox_center_lon=grid_features['grid_lon'].mean(),
-        mapbox_zoom=11,
+        map=dict(
+            style="open-street-map",
+            center=dict(
+                lat=grid_features['grid_lat'].mean(),
+                lon=grid_features['grid_lon'].mean(),
+            ),
+            zoom=11,
+        ),
         margin={"r":0,"t":0,"l":0,"b":0},
-        title="Heatmap: Color intensity shows the number of accidents in each grid cell. Brighter = more accidents."
+        title="Collision Intensity Map: marker color and size show collisions per grid cell."
     )
     return fig
 
@@ -213,15 +226,11 @@ def create_cluster_map(grid_features: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
     for cluster in unique_clusters:
         cluster_data = grid_features[grid_features['Cluster'] == cluster]
-        fig.add_trace(go.Scattermapbox(
+        fig.add_trace(go.Scattermap(
             lat=cluster_data['grid_lat'],
             lon=cluster_data['grid_lon'],
             mode='markers',
-            marker=go.scattermapbox.Marker(
-                size=10,
-                color=color_map[cluster],
-                opacity=0.7
-            ),
+            marker=dict(size=10, color=color_map[cluster], opacity=0.7),
             name=f'Cluster {cluster}',
             text=cluster_data.apply(
                 lambda row: f"Accidents: {row['accident_count']}<br>Age group: {row['avg_age_group']:.2f}",
@@ -230,10 +239,14 @@ def create_cluster_map(grid_features: pd.DataFrame) -> go.Figure:
             hoverinfo='text'
         ))
     fig.update_layout(
-        mapbox_style="open-street-map",
-        mapbox_center_lat=grid_features['grid_lat'].mean(),
-        mapbox_center_lon=grid_features['grid_lon'].mean(),
-        mapbox_zoom=11,
+        map=dict(
+            style="open-street-map",
+            center=dict(
+                lat=grid_features['grid_lat'].mean(),
+                lon=grid_features['grid_lon'].mean(),
+            ),
+            zoom=11,
+        ),
         margin={"r":0,"t":0,"l":0,"b":0},
         legend=dict(
             yanchor="top",
@@ -243,4 +256,4 @@ def create_cluster_map(grid_features: pd.DataFrame) -> go.Figure:
         ),
         title="Cluster Map: Each point is a grid cell, colored by cluster label."
     )
-    return fig 
+    return fig

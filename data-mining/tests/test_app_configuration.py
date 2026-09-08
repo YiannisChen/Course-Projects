@@ -22,3 +22,13 @@ def test_dbscan_uses_interpretable_grid_pattern_features():
 
 def test_cli_uses_the_same_dbscan_grid_features_as_the_interface():
     assert 'feature_columns = ["accident_count", "weekend_ratio"]' in CLI
+
+
+def test_interface_uses_the_shared_fixed_grid_origin():
+    assert "calculate_grid_features(df_filtered, size=grid_size)" in APP
+    assert "lat_min=lat_min, lon_min=lon_min" not in APP
+
+
+def test_interface_can_use_an_explicit_local_development_dataset_path():
+    assert 'LOCAL_DATASET_ENV = "LA_TRAFFIC_CSV"' in APP
+    assert 'source = uploaded_file or os.environ.get(LOCAL_DATASET_ENV)' in APP

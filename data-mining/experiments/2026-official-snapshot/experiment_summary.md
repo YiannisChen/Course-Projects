@@ -41,14 +41,16 @@ and 00:00 as far apart. The UI now labels epsilon honestly and exposes
 0.10--1.20, with an exploratory balanced default of `grid_size=0.01`,
 `eps=0.25`, and `min_samples=5`.
 
-The main K-Means analysis remains record-level and uses standardized `Hour`,
-`DayOfWeek`, `IsWeekend`, and `Victim Age`, plus one-hot `Victim Sex`, `Victim
-Descent`, and `Premise Description`. It describes mixed accident attributes,
-not spatial groups. The supplied K-Metrics are full-data fit statistics;
-silhouette is explicitly a deterministic 20,000-record sample
-(`np.random.default_rng(42).choice(..., replace=False)`). K=2 has the highest
-sampled silhouette but is a coarse split; K=4 is the strongest nontrivial
-setting. K=8 is exploratory rather than empirically optimal.
+The final K-Means analysis is record-level and uses cyclical hour and weekday
+encodings, median-imputed victim age plus an age-missing indicator, and one-hot
+`Victim Sex` and `Victim Descent`. `Premise Description` is retained for
+descriptive summaries but excluded from the distance space to avoid letting a
+large one-hot block dominate Euclidean distance. It describes temporal and
+demographic record patterns, not spatial groups. The supplied metrics are
+full-data fit statistics; silhouette is explicitly a deterministic 20,000-record
+sample (`np.random.default_rng(42).choice(..., replace=False)`). K=2 has the
+highest sampled silhouette; larger K values provide finer exploratory
+segmentation without a strong multi-cluster optimum.
 
 Compare mode intentionally applies both DBSCAN and K-Means to the same
 grid-level feature matrix. Its crosstab describes overlap of grid assignments;
@@ -68,3 +70,13 @@ The experiments support algorithm-behaviour claims: fine grids retain more
 local detail, low epsilon yields high noise, and high epsilon merges patterns.
 They do not establish collision causes, policy interventions, or citywide
 geographic risk rankings.
+
+## Interface validation
+
+The Streamlit interface was run against the full snapshot: 614,812 displayed
+records, 1,314 grid cells, and 21 DBSCAN labels including noise at the balanced
+setting. Plotly 7 removed the legacy Mapbox trace classes used by the coursework
+interface. The maps were migrated to MapLibre `Scattermap`; the collision
+intensity view uses count-scaled/color-coded grid points rather than claiming a
+kernel density surface. Screenshots in `../../demo/` are captured from this
+real-data Streamlit session.

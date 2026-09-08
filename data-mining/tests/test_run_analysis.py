@@ -17,7 +17,11 @@ from traffic_hotspots.data_preparation import (
     format_time_occurred,
     preprocess_data,
 )
-from traffic_hotspots.feature_engineering import calculate_grid_features, create_feature_matrix
+from traffic_hotspots.feature_engineering import (
+    calculate_grid_features,
+    create_feature_matrix,
+    prepare_individual_features,
+)
 
 FIXTURE = PROJECT_ROOT / "examples" / "sample_collisions.csv"
 
@@ -125,6 +129,19 @@ def test_kmeans_is_deterministic_and_dbscan_returns_labels():
     )
     assert len(dbscan_labels) == len(grid)
     assert set(dbscan.labels_) == set(dbscan_labels)
+
+
+def test_individual_features_encode_circular_time_and_missing_age():
+    prepared = preprocess_data(FIXTURE)
+    prepared.loc[prepared.index[0], "Victim Age"] = np.nan
+
+    features, names = prepare_individual_features(prepared)
+
+    assert {"HourSin", "HourCos", "WeekdaySin", "WeekdayCos", "AgeMissing"} <= set(names)
+    assert "Hour" not in names
+    assert "DayOfWeek" not in names
+    assert "Premise Description" not in " ".join(names)
+    assert np.isfinite(features).all()
 
 
 def test_validate_required_columns_reports_missing_names():

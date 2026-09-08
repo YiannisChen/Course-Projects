@@ -106,29 +106,29 @@ def create_feature_matrix(
 
 # Prepare features for individual accident clustering
 def prepare_individual_features(df: pd.DataFrame) -> (pd.DataFrame, list):
-    
-    # Select features
-    features = [
-        'Hour', 'DayOfWeek', 'IsWeekend', 'Victim Age',
-        'Victim Sex', 'Victim Descent', 'Premise Description'
-    ]
     df = df.copy()
-    # Define categorical and numeric columns
-    categorical = ['Victim Sex', 'Victim Descent', 'Premise Description']
-    numeric = ['Hour', 'DayOfWeek', 'IsWeekend', 'Victim Age']
-    # Fill missing values: numeric with mean, categorical with 'Unknown'
-    for col in numeric:
-        df[col] = df[col].fillna(df[col].mean())
+
+    # Encode recurring time fields on a circle so adjacent boundary values such
+    # as 23:00 and 00:00 are not treated as maximally distant.
+    df['HourSin'] = np.sin(2 * np.pi * df['Hour'] / 24)
+    df['HourCos'] = np.cos(2 * np.pi * df['Hour'] / 24)
+    df['WeekdaySin'] = np.sin(2 * np.pi * df['DayOfWeek'] / 7)
+    df['WeekdayCos'] = np.cos(2 * np.pi * df['DayOfWeek'] / 7)
+
+    # Missing age is not interpreted as an observed average-age value.
+    df['AgeMissing'] = df['Victim Age'].isna().astype(int)
+    df['Victim Age'] = df['Victim Age'].fillna(df['Victim Age'].median())
+
+    categorical = ['Victim Sex', 'Victim Descent']
+    numeric = ['HourSin', 'HourCos', 'WeekdaySin', 'WeekdayCos', 'Victim Age', 'AgeMissing']
     for col in categorical:
         df[col] = df[col].fillna('Unknown')
-    df = df[features]
-    # Build transformer
+
     preprocessor = ColumnTransformer([
         ('num', StandardScaler(), numeric),
         ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), categorical)
     ])
-    X = preprocessor.fit_transform(df)
-    # Get feature names
+    X = preprocessor.fit_transform(df[numeric + categorical])
     cat_features = preprocessor.named_transformers_['cat'].get_feature_names_out(categorical)
     feature_names = numeric + list(cat_features)
-    return X, feature_names 
+    return X, feature_names

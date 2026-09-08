@@ -1,4 +1,4 @@
-# Traffic Collision Data Mining
+# LA Traffic Collision Pattern Analysis
 
 Coursework-scale exploratory analysis of Los Angeles traffic-collision records.
 It provides a Streamlit interface, reusable preprocessing and clustering
@@ -31,6 +31,10 @@ Run the original Streamlit interface locally:
 streamlit run app.py
 ```
 
+The 2026 validation used the complete fresh official snapshot in the interface.
+
+![Real-data collision intensity view](demo/streamlit-overview.png)
+
 ### DBSCAN: grid-pattern clustering
 
 DBSCAN operates on **grid cells**, not individual records. Each cell uses a
@@ -47,11 +51,13 @@ the former would impose ordinal spacing, while the latter is circular.
 ### K-Means: accident-pattern clustering
 
 The main K-Means interface clusters **individual collision records** using
-standardized hour, weekday, weekend flag, and victim age plus one-hot victim
-sex, descent, and premise description. It describes mixed accident attributes,
-not spatial zones. On the 2026 snapshot, K=2 has the highest deterministic
-20,000-record sampled silhouette; K=4 is the strongest nontrivial comparison.
-K=8 remains an exploratory setting rather than a claimed optimum.
+cyclical hour and weekday encodings, median-imputed victim age with a missing
+age flag, and one-hot victim sex and descent. Premise description remains a
+descriptive field rather than a high-dimensional distance block. It describes
+temporal and demographic record patterns, not spatial zones. On the 2026
+snapshot, K=2 has the highest deterministic 20,000-record sampled silhouette;
+the sweep does not identify a strong multi-cluster optimum. K=4 and K=8 are
+representative exploratory granularities.
 
 ### Compare mode
 

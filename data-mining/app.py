@@ -6,34 +6,39 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import logging
+import os
 from traffic_hotspots.data_preparation import preprocess_data
-from traffic_hotspots.feature_engineering import assign_grid, calculate_grid_features, create_feature_matrix, prepare_individual_features
+from traffic_hotspots.feature_engineering import calculate_grid_features, create_feature_matrix, prepare_individual_features
 from traffic_hotspots.clustering import perform_clustering, perform_kmeans, perform_agglomerative
 from traffic_hotspots.visualization import create_heatmap, create_cluster_map, create_cluster_comparison
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+LOCAL_DATASET_ENV = "LA_TRAFFIC_CSV"
 
 # Page configuration
 st.set_page_config(
-    page_title="LA Traffic Accident Hotspots",
+    page_title="LA Traffic Collision Pattern Analysis",
     page_icon="��",
     layout="wide"
 )
 
 # Main Streamlit app for accident hotspot analysis
 def main():
-    st.title("Traffic Accident Hotspot Analysis")
+    st.title("LA Traffic Collision Pattern Analysis")
     st.sidebar.header("Analysis Parameters")
     algorithm = st.sidebar.selectbox(
         "Clustering Algorithm",
-        ["DBSCAN (Grid Patterns)", "K-Means (Accident Patterns)", "Compare Clustering"]
+        ["DBSCAN (Grid Patterns)", "K-Means (Record Patterns)", "Compare Grid Clustering"]
     )
     uploaded_file = st.sidebar.file_uploader("Upload Traffic Collision Data (CSV)", type=['csv'])
-    if uploaded_file is not None:
+    source = uploaded_file or os.environ.get(LOCAL_DATASET_ENV)
+    if uploaded_file is None and source is not None:
+        st.sidebar.caption("Using a local development dataset configured for this run.")
+    if source is not None:
         try:
-            df = preprocess_data(uploaded_file)
+            df = preprocess_data(source)
             if len(df) == 0:
                 st.error("No valid data found after preprocessing. Please check your data file.")
                 return
@@ -43,10 +48,7 @@ def main():
                 year_range = st.sidebar.slider("Select Year Range", min_value=min_year, max_value=max_year, value=(min_year, max_year))
                 df_filtered = df[(df['Year'] >= year_range[0]) & (df['Year'] <= year_range[1])]
                 grid_size = st.sidebar.slider("Grid Size (degrees)", 0.001, 0.05, 0.01, step=0.001)
-                lat_min = df_filtered['Latitude'].min()
-                lon_min = df_filtered['Longitude'].min()
-                df_filtered['Grid'] = df_filtered.apply(lambda row: assign_grid(row['Latitude'], row['Longitude'], lat_min, lon_min, grid_size), axis=1)
-                grid_features = calculate_grid_features(df_filtered, lat_min=lat_min, lon_min=lon_min, size=grid_size)
+                grid_features = calculate_grid_features(df_filtered, size=grid_size)
                 if len(grid_features) == 0:
                     st.error("No valid grid features could be calculated.")
                     return
@@ -58,7 +60,7 @@ def main():
                 grid_features['Cluster'] = labels
                 cluster_data = grid_features
                 cluster_type = 'grid'
-            elif algorithm == "K-Means (Accident Patterns)":
+            elif algorithm == "K-Means (Record Patterns)":
                 n_clusters = st.sidebar.slider("Number of Clusters", 2, 20, 8)
                 X, feature_names = prepare_individual_features(df)
                 labels, model = perform_kmeans(X, n_clusters)
@@ -67,16 +69,13 @@ def main():
                 st.write("Cluster counts:", df['Cluster'].value_counts())
                 cluster_data = df
                 cluster_type = 'individual'
-            elif algorithm == "Compare Clustering":
+            elif algorithm == "Compare Grid Clustering":
                 min_year = int(df['Year'].min())
                 max_year = int(df['Year'].max())
                 year_range = st.sidebar.slider("Select Year Range", min_value=min_year, max_value=max_year, value=(min_year, max_year))
                 df_filtered = df[(df['Year'] >= year_range[0]) & (df['Year'] <= year_range[1])]
                 grid_size = st.sidebar.slider("Grid Size (degrees)", 0.001, 0.05, 0.01, step=0.001)
-                lat_min = df_filtered['Latitude'].min()
-                lon_min = df_filtered['Longitude'].min()
-                df_filtered['Grid'] = df_filtered.apply(lambda row: assign_grid(row['Latitude'], row['Longitude'], lat_min, lon_min, grid_size), axis=1)
-                grid_features = calculate_grid_features(df_filtered, lat_min=lat_min, lon_min=lon_min, size=grid_size)
+                grid_features = calculate_grid_features(df_filtered, size=grid_size)
                 if len(grid_features) == 0:
                     st.error("No valid grid features could be calculated.")
                     return
@@ -146,13 +145,13 @@ def main():
                     st.info("Table truncated: showing only top 20 DBSCAN clusters by accident count.")
                 return
             st.subheader("Visualization")
-            visualization_type = st.radio("Select Visualization Type", ["Heatmap", "Cluster Map", "Cluster Comparison"])
-            if visualization_type == "Heatmap":
+            visualization_type = st.radio("Select Visualization Type", ["Collision Intensity Map", "Cluster Map", "Cluster Comparison"])
+            if visualization_type == "Collision Intensity Map":
                 if cluster_type == 'grid':
                     fig = create_heatmap(cluster_data)
                     st.plotly_chart(fig)
                 else:
-                    st.info("Heatmap is only available for grid-based (DBSCAN) clustering.")
+                    st.info("Collision intensity mapping is only available for grid-based clustering.")
             elif visualization_type == "Cluster Map":
                 if cluster_type == 'grid':
                     fig = create_cluster_map(cluster_data)
