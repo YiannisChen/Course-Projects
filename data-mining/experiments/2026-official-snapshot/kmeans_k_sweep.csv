@@ -1,0 +1,9 @@
+k,inertia,min_cluster_size,median_cluster_size,max_cluster_size,sampled_silhouette,silhouette_sample_size,sampling_rule,runtime_seconds
+2,2317115.2,171146,307406.0,443666,0.3214,20000,np.random.default_rng(42).choice without replacement,1.01
+4,1803457.5,93412,156960.0,207480,0.2042,20000,np.random.default_rng(42).choice without replacement,1.51
+6,1551902.6,63050,109557.5,127300,0.1710,20000,np.random.default_rng(42).choice without replacement,1.59
+8,1427446.5,49806,73761.0,110813,0.1577,20000,np.random.default_rng(42).choice without replacement,1.78
+10,1324925.2,15964,66051.5,80695,0.1527,20000,np.random.default_rng(42).choice without replacement,2.66
+12,1231694.1,18680,55151.0,73487,0.1562,20000,np.random.default_rng(42).choice without replacement,3.45
+16,1118549.4,9513,42426.0,57525,0.1622,20000,np.random.default_rng(42).choice without replacement,3.24
+20,1046399.0,9320,32468.5,46312,0.1551,20000,np.random.default_rng(42).choice without replacement,3.56
