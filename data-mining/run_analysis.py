@@ -33,7 +33,7 @@ def analyze_file(path: str | Path, algorithm: str = "kmeans", n_clusters: int = 
     grid_features = calculate_grid_features(prepared)
     if grid_features.empty:
         raise ValueError("No grid features could be calculated")
-    feature_columns = ["accident_count", "avg_age_group", "weekend_ratio", "peak_hour"]
+    feature_columns = ["accident_count", "weekend_ratio"]
     features, _ = create_feature_matrix(grid_features, feature_columns)
     if algorithm == "kmeans":
         if not 1 < n_clusters <= len(grid_features):

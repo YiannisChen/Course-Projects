@@ -28,7 +28,7 @@ def main():
     st.sidebar.header("Analysis Parameters")
     algorithm = st.sidebar.selectbox(
         "Clustering Algorithm",
-        ["DBSCAN (Spatial Hotspots)", "K-Means (Accident Patterns)", "Compare Clustering"]
+        ["DBSCAN (Grid Patterns)", "K-Means (Accident Patterns)", "Compare Clustering"]
     )
     uploaded_file = st.sidebar.file_uploader("Upload Traffic Collision Data (CSV)", type=['csv'])
     if uploaded_file is not None:
@@ -37,7 +37,7 @@ def main():
             if len(df) == 0:
                 st.error("No valid data found after preprocessing. Please check your data file.")
                 return
-            if algorithm == "DBSCAN (Spatial Hotspots)":
+            if algorithm == "DBSCAN (Grid Patterns)":
                 min_year = int(df['Year'].min())
                 max_year = int(df['Year'].max())
                 year_range = st.sidebar.slider("Select Year Range", min_value=min_year, max_value=max_year, value=(min_year, max_year))
@@ -50,9 +50,9 @@ def main():
                 if len(grid_features) == 0:
                     st.error("No valid grid features could be calculated.")
                     return
-                eps = st.sidebar.slider("DBSCAN Epsilon", 0.001, 0.5, 0.05, step=0.001)
-                min_samples = st.sidebar.slider("Minimum Samples", 1, 50, 3)
-                X, feature_names = create_feature_matrix(grid_features, features=['accident_count', 'avg_age_group', 'weekend_ratio', 'peak_hour'])
+                eps = st.sidebar.slider("DBSCAN Epsilon (standardized grid-feature distance)", 0.1, 1.2, 0.25, step=0.05)
+                min_samples = st.sidebar.slider("Minimum Samples", 1, 50, 5)
+                X, feature_names = create_feature_matrix(grid_features, features=['accident_count', 'weekend_ratio'])
                 coords = grid_features[['grid_lat', 'grid_lon']].values
                 labels, dbscan = perform_clustering(X, coords, eps, min_samples)
                 grid_features['Cluster'] = labels
@@ -80,10 +80,11 @@ def main():
                 if len(grid_features) == 0:
                     st.error("No valid grid features could be calculated.")
                     return
-                eps = st.sidebar.slider("DBSCAN Epsilon", 0.001, 0.5, 0.05, step=0.001)
-                min_samples = st.sidebar.slider("Minimum Samples", 1, 50, 3)
-                n_clusters = st.sidebar.slider("K-Means Clusters", 2, 20, 8)
-                X, feature_names = create_feature_matrix(grid_features, features=['accident_count', 'avg_age_group', 'weekend_ratio', 'peak_hour'])
+                eps = st.sidebar.slider("DBSCAN Epsilon (standardized grid-feature distance)", 0.1, 1.2, 0.25, step=0.05)
+                min_samples = st.sidebar.slider("Minimum Samples", 1, 50, 5)
+                max_k = min(20, len(grid_features))
+                n_clusters = st.sidebar.slider("K-Means Clusters", 2, max_k, min(8, max_k))
+                X, feature_names = create_feature_matrix(grid_features, features=['accident_count', 'weekend_ratio'])
                 coords = grid_features[['grid_lat', 'grid_lon']].values
                 dbscan_labels, _ = perform_clustering(X, coords, eps, min_samples)
                 kmeans_labels, _ = perform_kmeans(X, n_clusters)
@@ -253,4 +254,4 @@ if __name__ == "__main__":
     main()
 
 else:
-    st.info("Please upload a CSV file containing traffic collision data to begin the analysis.") 
+    st.info("Please upload a CSV file containing traffic collision data to begin the analysis.")
