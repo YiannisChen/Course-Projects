@@ -4,13 +4,12 @@ import logging
 
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 
 from traffic_hotspots.clustering import perform_clustering, perform_kmeans
 from traffic_hotspots.data_preparation import preprocess_data
 from traffic_hotspots.feature_engineering import calculate_grid_features, create_feature_matrix, prepare_individual_features
-from traffic_hotspots.visualization import create_cluster_map, create_heatmap
+from traffic_hotspots.visualization import create_cluster_map, create_heatmap, create_record_cluster_map
 
 
 logging.basicConfig(level=logging.INFO)
@@ -48,25 +47,6 @@ def record_cluster_summary(records: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
         .sort_values("Records", ascending=False)
     )
-
-
-def create_record_cluster_map(records: pd.DataFrame) -> go.Figure:
-    if records.empty:
-        raise ValueError("Record pattern maps require at least one collision record.")
-    sampled = records.sample(n=min(5_000, len(records)), random_state=42)
-    figure = px.scatter_map(
-        sampled,
-        lat="Latitude",
-        lon="Longitude",
-        color="Cluster",
-        hover_data=["Victim Age", "Hour", "DayOfWeek", "Victim Sex", "Victim Descent"],
-        zoom=10,
-        map_style="open-street-map",
-        title="Record Pattern Clusters",
-    )
-    figure.update_traces(marker={"size": 6, "opacity": 0.55})
-    figure.update_layout(height=600, margin={"r": 0, "t": 44, "l": 0, "b": 0})
-    return figure
 
 
 def render_figure(builder, data: pd.DataFrame) -> None:
@@ -155,7 +135,7 @@ def render_kmeans(dataset: pd.DataFrame) -> None:
     view = st.radio("View", ["Record Pattern Map", "Cluster Summary"], horizontal=True, label_visibility="collapsed")
     if view == "Record Pattern Map":
         st.caption("A deterministic 5,000-record display sample keeps the map readable; clustering uses all uploaded records.")
-        render_figure(create_record_cluster_map, clustered)
+        render_figure(create_record_cluster_map, clustered.sample(n=min(5_000, len(clustered)), random_state=42))
     else:
         st.caption("Descriptive summaries of record-level exploratory clusters.")
         st.dataframe(record_cluster_summary(clustered), width="stretch", hide_index=True)
