@@ -185,6 +185,9 @@ def create_time_series_plot(
 
 # Create a collision-intensity map compatible with current MapLibre traces.
 def create_heatmap(grid_features: pd.DataFrame) -> go.Figure:
+    if grid_features.empty:
+        raise ValueError("Collision intensity maps require at least one grid cell.")
+
     marker_size = 6 + 18 * np.sqrt(
         grid_features['accident_count'] / grid_features['accident_count'].max()
     )
@@ -212,17 +215,22 @@ def create_heatmap(grid_features: pd.DataFrame) -> go.Figure:
             ),
             zoom=11,
         ),
-        margin={"r":0,"t":0,"l":0,"b":0},
-        title="Collision Intensity Map: marker color and size show collisions per grid cell."
+        margin={"r":0,"t":44,"l":0,"b":0},
+        height=600,
+        title="Collision Intensity Map",
     )
     return fig
 
 # Show clusters on a map
 def create_cluster_map(grid_features: pd.DataFrame) -> go.Figure:
-   
+    if grid_features.empty:
+        raise ValueError("Cluster maps require at least one grid cell.")
+
     unique_clusters = grid_features['Cluster'].unique()
     colors = px.colors.qualitative.Set1 + px.colors.qualitative.Pastel
-    color_map = {cluster: colors[i % len(colors)] for i, cluster in enumerate(sorted(unique_clusters))}
+    non_noise = [cluster for cluster in sorted(unique_clusters) if cluster != -1]
+    color_map = {-1: "#9CA3AF"}
+    color_map.update({cluster: colors[i % len(colors)] for i, cluster in enumerate(non_noise)})
     fig = go.Figure()
     for cluster in unique_clusters:
         cluster_data = grid_features[grid_features['Cluster'] == cluster]
@@ -230,7 +238,11 @@ def create_cluster_map(grid_features: pd.DataFrame) -> go.Figure:
             lat=cluster_data['grid_lat'],
             lon=cluster_data['grid_lon'],
             mode='markers',
-            marker=dict(size=10, color=color_map[cluster], opacity=0.7),
+            marker=dict(
+                size=8 if cluster == -1 else 10,
+                color=color_map[cluster],
+                opacity=0.30 if cluster == -1 else 0.72,
+            ),
             name=f'Cluster {cluster}',
             text=cluster_data.apply(
                 lambda row: f"Accidents: {row['accident_count']}<br>Age group: {row['avg_age_group']:.2f}",
@@ -247,13 +259,14 @@ def create_cluster_map(grid_features: pd.DataFrame) -> go.Figure:
             ),
             zoom=11,
         ),
-        margin={"r":0,"t":0,"l":0,"b":0},
+        margin={"r":0,"t":44,"l":0,"b":0},
+        height=600,
         legend=dict(
             yanchor="top",
             y=0.99,
             xanchor="left",
             x=0.01
         ),
-        title="Cluster Map: Each point is a grid cell, colored by cluster label."
+        title="Grid Pattern Clusters"
     )
     return fig

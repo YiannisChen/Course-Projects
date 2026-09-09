@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from traffic_hotspots.visualization import create_cluster_map, create_heatmap
 
@@ -20,6 +21,7 @@ def test_collision_intensity_map_uses_supported_maplibre_trace():
 
     assert figure.data[0].type == "scattermap"
     assert figure.layout.map.style == "open-street-map"
+    assert len(figure.data) > 0
 
 
 def test_cluster_map_uses_supported_maplibre_trace():
@@ -27,3 +29,10 @@ def test_cluster_map_uses_supported_maplibre_trace():
 
     assert {trace.type for trace in figure.data} == {"scattermap"}
     assert figure.layout.map.style == "open-street-map"
+    assert len(figure.data) > 0
+
+
+@pytest.mark.parametrize("builder", [create_heatmap, create_cluster_map])
+def test_map_builders_reject_empty_grid_data(builder):
+    with pytest.raises(ValueError, match="at least one grid cell"):
+        builder(_grid_features().iloc[0:0])
