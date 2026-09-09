@@ -105,7 +105,7 @@ def create_feature_matrix(
         raise
 
 # Prepare features for individual accident clustering
-def prepare_individual_features(df: pd.DataFrame) -> (pd.DataFrame, list):
+def prepare_individual_features(df: pd.DataFrame, include_age_missing: bool = False) -> (pd.DataFrame, list):
     df = df.copy()
 
     # Encode recurring time fields on a circle so adjacent boundary values such
@@ -115,12 +115,16 @@ def prepare_individual_features(df: pd.DataFrame) -> (pd.DataFrame, list):
     df['WeekdaySin'] = np.sin(2 * np.pi * df['DayOfWeek'] / 7)
     df['WeekdayCos'] = np.cos(2 * np.pi * df['DayOfWeek'] / 7)
 
-    # Missing age is not interpreted as an observed average-age value.
+    # Missing age is not interpreted as an observed average-age value. It is
+    # retained for optional diagnostics but excluded from the default distance
+    # space so a missing-data artifact cannot become a record-pattern cluster.
     df['AgeMissing'] = df['Victim Age'].isna().astype(int)
     df['Victim Age'] = df['Victim Age'].fillna(df['Victim Age'].median())
 
     categorical = ['Victim Sex', 'Victim Descent']
-    numeric = ['HourSin', 'HourCos', 'WeekdaySin', 'WeekdayCos', 'Victim Age', 'AgeMissing']
+    numeric = ['HourSin', 'HourCos', 'WeekdaySin', 'WeekdayCos', 'Victim Age']
+    if include_age_missing:
+        numeric.append('AgeMissing')
     for col in categorical:
         df[col] = df[col].fillna('Unknown')
 

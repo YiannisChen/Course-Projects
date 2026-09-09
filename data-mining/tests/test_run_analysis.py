@@ -135,13 +135,22 @@ def test_individual_features_encode_circular_time_and_missing_age():
     prepared = preprocess_data(FIXTURE)
     prepared.loc[prepared.index[0], "Victim Age"] = np.nan
 
-    features, names = prepare_individual_features(prepared)
+    features, names = prepare_individual_features(prepared, include_age_missing=True)
 
     assert {"HourSin", "HourCos", "WeekdaySin", "WeekdayCos", "AgeMissing"} <= set(names)
     assert "Hour" not in names
     assert "DayOfWeek" not in names
     assert "Premise Description" not in " ".join(names)
     assert np.isfinite(features).all()
+
+
+def test_individual_features_can_exclude_missing_age_indicator_from_distance_features():
+    prepared = preprocess_data(FIXTURE)
+    prepared.loc[prepared.index[0], "Victim Age"] = np.nan
+
+    _, names = prepare_individual_features(prepared, include_age_missing=False)
+
+    assert "AgeMissing" not in names
 
 
 def test_validate_required_columns_reports_missing_names():

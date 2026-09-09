@@ -36,3 +36,10 @@ def test_interface_requires_an_uploaded_file_and_has_no_local_dataset_fallback()
     assert 'os.environ.get(' not in APP
     assert 'preprocess_data(uploaded_file)' in APP
     assert 'Upload a compatible LA traffic-collision CSV to begin the analysis.' in APP
+
+
+def test_interface_includes_descriptive_patterns_and_model_guidance_views():
+    assert 'Overview / Descriptive Patterns' in APP
+    assert 'Top 10 Areas by Collision Records' in APP
+    assert 'DBSCAN parameter evidence' in APP
+    assert 'K-Means model evidence' in APP
