@@ -189,6 +189,33 @@ static int test_dot_export_includes_labeled_edges(void) {
     return 0;
 }
 
+static int test_selected_dot_export_uses_real_tree_paths(void) {
+    const unsigned char input[] = "abracadabra";
+    bool selected[256] = {false};
+    HuffmanTree *tree = NULL;
+    HuffmanCodeTable codes = {0};
+    FILE *dot = tmpfile();
+    char output[4096] = {0};
+
+    ASSERT_TRUE(dot != NULL);
+    selected[(unsigned char)'a'] = true;
+    selected[(unsigned char)'r'] = true;
+    ASSERT_TRUE(huffman_build(input, sizeof(input) - 1, &tree) == HUFFMAN_OK);
+    ASSERT_TRUE(huffman_generate_codes_top_down(tree, &codes) == HUFFMAN_OK);
+    ASSERT_TRUE(huffman_export_dot_selected(tree, selected, &codes, dot) == HUFFMAN_OK);
+    rewind(dot);
+    ASSERT_TRUE(fread(output, 1, sizeof(output) - 1, dot) > 0);
+    ASSERT_TRUE(strstr(output, "label=\"11\"") != NULL);
+    ASSERT_TRUE(strstr(output, codes.codes[(unsigned char)'a']) != NULL);
+    ASSERT_TRUE(strstr(output, codes.codes[(unsigned char)'r']) != NULL);
+    ASSERT_TRUE(strstr(output, "0x62") == NULL);
+
+    fclose(dot);
+    huffman_code_table_free(&codes);
+    huffman_tree_free(tree);
+    return 0;
+}
+
 int main(void) {
     const unsigned char abracadabra[] = "abracadabra";
     const unsigned char hello[] = "hello world";
@@ -213,6 +240,7 @@ int main(void) {
     ASSERT_TRUE(test_single_symbol_stream_validation() == 0);
     ASSERT_TRUE(test_deterministic_randomized_round_trips() == 0);
     ASSERT_TRUE(test_dot_export_includes_labeled_edges() == 0);
+    ASSERT_TRUE(test_selected_dot_export_uses_real_tree_paths() == 0);
 
     puts("Huffman tests passed");
     return 0;

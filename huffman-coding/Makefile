@@ -6,11 +6,16 @@ SOURCES = src/huffman.c
 
 all: huffman
 
-demo/tree.svg: src/export_demo.c $(SOURCES) include/huffman.h
+demo/trump-post-tree.svg: huffman-tree examples/trump.txt
 	mkdir -p demo
-	$(CC) $(CFLAGS) src/export_demo.c $(SOURCES) -o huffman-dot
-	./huffman-dot > demo/tree.dot
-	dot -Tsvg demo/tree.dot -o demo/tree.svg
+	./huffman-tree examples/trump.txt full | dot -Tsvg -o $@
+
+demo/trump-post-tree-overview.svg: huffman-tree examples/trump.txt
+	mkdir -p demo
+	./huffman-tree examples/trump.txt overview | dot -Tsvg -o $@
+
+huffman-tree: src/export_tree.c $(SOURCES) include/huffman.h
+	$(CC) $(CFLAGS) src/export_tree.c $(SOURCES) -o $@
 
 huffman: src/main.c $(SOURCES) include/huffman.h
 	$(CC) $(CFLAGS) src/main.c $(SOURCES) -o $@
@@ -18,7 +23,7 @@ huffman: src/main.c $(SOURCES) include/huffman.h
 test-huffman: tests/test_huffman.c $(SOURCES) include/huffman.h
 	$(CC) $(CFLAGS) tests/test_huffman.c $(SOURCES) -o $@
 
-test: huffman test-huffman
+test: huffman huffman-tree test-huffman
 	./test-huffman
 	sh tests/test_cli.sh
 
@@ -27,5 +32,5 @@ sanitize:
 	./test-huffman-sanitize
 
 clean:
-	rm -f huffman huffman-dot test-huffman test-huffman-sanitize
+	rm -f huffman huffman-tree test-huffman test-huffman-sanitize demo/trump-post-tree.svg demo/trump-post-tree-overview.svg
 	rm -rf *.dSYM

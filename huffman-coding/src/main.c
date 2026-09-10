@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
     HuffmanTree *tree = NULL;
     HuffmanCodeTable top_down = {0}, bottom_up = {0};
     char *bits = NULL;
+    size_t payload_bits = 0;
     int result = 1;
     if (argc != 2) { fprintf(stderr, "Usage: %s <input-file>\n", argv[0]); return 1; }
     input = read_file(argv[1], &input_length);
@@ -34,10 +35,19 @@ int main(int argc, char **argv) {
         huffman_generate_codes_bottom_up(tree, &bottom_up) != HUFFMAN_OK ||
         huffman_encode(input, input_length, &top_down, &bits) != HUFFMAN_OK ||
         huffman_decode(tree, bits, &decoded, &decoded_length) != HUFFMAN_OK) goto cleanup;
+    for (size_t symbol = 0; symbol < 256; ++symbol)
+        if (frequencies[symbol] != 0) payload_bits += frequencies[symbol] * strlen(top_down.codes[symbol]);
+    if (payload_bits != strlen(bits)) goto cleanup;
     printf("Input (%zu bytes):\n", input_length); fwrite(input, 1, input_length, stdout); puts("\nFrequency and code tables:");
     for (size_t symbol = 0; symbol < 256; ++symbol) if (frequencies[symbol] != 0)
         printf("0x%02zx  frequency=%zu  top-down=%s  bottom-up=%s\n", symbol, frequencies[symbol], top_down.codes[symbol], bottom_up.codes[symbol]);
-    printf("Encoded bits: %s\nDecoded text:\n", bits); fwrite(decoded, 1, decoded_length, stdout); putchar('\n');
+    printf("Encoded bits: %s\n", bits);
+    printf("Original size:              %zu bytes / %zu bits\n", input_length, input_length * 8);
+    printf("Huffman payload:            %zu bits\n", payload_bits);
+    printf("Theoretical packed payload: %zu bytes\n", (payload_bits + 7) / 8);
+    printf("Payload bits saved:         %zu\n", input_length * 8 - payload_bits);
+    printf("Payload reduction:          %.1f%%\n", 100.0 * (double)(input_length * 8 - payload_bits) / (double)(input_length * 8));
+    printf("Decoded text:\n"); fwrite(decoded, 1, decoded_length, stdout); putchar('\n');
     printf("Round-trip: %s\n", decoded_length == input_length && memcmp(decoded, input, input_length) == 0 ? "PASS" : "FAIL");
     printf("Code-table equivalence: %s\n", huffman_code_tables_equal(&top_down, &bottom_up) ? "PASS" : "FAIL");
     result = 0;

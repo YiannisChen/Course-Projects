@@ -28,6 +28,7 @@ bool huffman_code_tables_equal(const HuffmanCodeTable *first, const HuffmanCodeT
 int huffman_encode(const unsigned char *input, size_t input_length, const HuffmanCodeTable *table, char **bits_out);
 int huffman_decode(const HuffmanTree *tree, const char *bits, unsigned char **output_out, size_t *output_length_out);
 int huffman_export_dot(const HuffmanTree *tree, FILE *output);
+int huffman_export_dot_selected(const HuffmanTree *tree, const bool selected_symbols[256], const HuffmanCodeTable *codes, FILE *output);
 void huffman_code_table_free(HuffmanCodeTable *table);
 void huffman_tree_free(HuffmanTree *tree);
 

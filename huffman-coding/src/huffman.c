@@ -321,20 +321,83 @@ int huffman_decode(const HuffmanTree *tree, const char *bits, unsigned char **ou
     return HUFFMAN_OK;
 }
 
+static void export_graph_header(FILE *output, const char *rankdir) {
+    fprintf(output, "digraph HuffmanTree {\n  graph [rankdir=%s,nodesep=0.35,ranksep=0.5,pad=0.15,bgcolor=white,splines=polyline];\n  node [fontname=Helvetica,fontsize=10,color=\"#64748B\",penwidth=0.8];\n  edge [fontname=Helvetica,fontsize=9,color=\"#64748B\",penwidth=0.8];\n", rankdir);
+}
+
+static void export_leaf_node(FILE *output, size_t index, const HuffmanNode *node, const char *code) {
+    unsigned char symbol = (unsigned char)node->symbol;
+    char label[8];
+
+    if (symbol == ' ') {
+        strcpy(label, "space");
+    } else if (symbol >= 32 && symbol <= 126) {
+        if (symbol == '\\' || symbol == '\"') {
+            label[0] = '\\';
+            label[1] = (char)symbol;
+            label[2] = '\0';
+        } else {
+            label[0] = (char)symbol;
+            label[1] = '\0';
+        }
+    } else {
+        snprintf(label, sizeof(label), "0x%02X", symbol);
+    }
+    if (code == NULL) {
+        fprintf(output, "  n%zu [shape=box,style=\"rounded,filled\",fillcolor=\"#EFF6FF\",label=\"%s\\n%zu\"];\n", index, label, node->frequency);
+    } else {
+        fprintf(output, "  n%zu [shape=box,style=\"rounded,filled\",fillcolor=\"#EFF6FF\",label=\"%s\\n%zu · %s\"];\n", index, label, node->frequency, code);
+    }
+}
+
 int huffman_export_dot(const HuffmanTree *tree, FILE *output) {
     if (tree == NULL || output == NULL) return HUFFMAN_ERROR_INVALID_ARGUMENT;
-    fprintf(output, "digraph HuffmanTree {\n  node [fontname=Helvetica];\n");
+    export_graph_header(output, "LR");
     for (size_t index = 0; index < tree->node_count; ++index) {
         const HuffmanNode *node = &tree->nodes[index];
         if (is_leaf(node)) {
-            unsigned char symbol = (unsigned char)node->symbol;
-            if (symbol >= 32 && symbol <= 126 && symbol != '\\' && symbol != '\"')
-                fprintf(output, "  n%zu [shape=box,label=\"%c\\nfreq=%zu\"];\n", index, symbol, node->frequency);
-            else
-                fprintf(output, "  n%zu [shape=box,label=\"0x%02X\\nfreq=%zu\"];\n", index, symbol, node->frequency);
+            export_leaf_node(output, index, node, NULL);
         } else {
-            fprintf(output, "  n%zu [label=\"freq=%zu\"];\n", index, node->frequency);
+            fprintf(output, "  n%zu [shape=ellipse,style=filled,fillcolor=\"#F1F5F9\",label=\"%zu\"];\n", index, node->frequency);
             fprintf(output, "  n%zu -> n%d [label=\"0\"];\n  n%zu -> n%d [label=\"1\"];\n", index, node->left, index, node->right);
+        }
+    }
+    return fputs("}\n", output) == EOF ? HUFFMAN_ERROR_INVALID_ARGUMENT : HUFFMAN_OK;
+}
+
+static bool mark_selected_nodes(const HuffmanTree *tree, int node_index, const bool selected_symbols[256], bool included[HUFFMAN_MAX_NODES]) {
+    const HuffmanNode *node = &tree->nodes[node_index];
+    if (is_leaf(node)) {
+        included[node_index] = selected_symbols[(unsigned char)node->symbol];
+        return included[node_index];
+    }
+    bool includes_left = mark_selected_nodes(tree, node->left, selected_symbols, included);
+    bool includes_right = mark_selected_nodes(tree, node->right, selected_symbols, included);
+    included[node_index] = includes_left || includes_right;
+    return included[node_index];
+}
+
+int huffman_export_dot_selected(const HuffmanTree *tree, const bool selected_symbols[256], const HuffmanCodeTable *codes, FILE *output) {
+    bool included[HUFFMAN_MAX_NODES] = {false};
+
+    if (tree == NULL || selected_symbols == NULL || codes == NULL || output == NULL) return HUFFMAN_ERROR_INVALID_ARGUMENT;
+    if (!mark_selected_nodes(tree, tree->root, selected_symbols, included)) return HUFFMAN_ERROR_INVALID_ARGUMENT;
+    export_graph_header(output, "TB");
+    fprintf(output, "  labelloc=\"t\";\n  label=\"Selected paths from the generated Huffman tree\";\n  fontname=Helvetica;\n  fontsize=14;\n");
+    for (size_t index = 0; index < tree->node_count; ++index) {
+        const HuffmanNode *node = &tree->nodes[index];
+        if (!included[index]) continue;
+        if (is_leaf(node)) {
+            const char *code = codes->codes[(unsigned char)node->symbol];
+            if (code == NULL) return HUFFMAN_ERROR_INVALID_ARGUMENT;
+            export_leaf_node(output, index, node, code);
+        } else {
+            if ((int)index == tree->root)
+                fprintf(output, "  n%zu [shape=doublecircle,style=filled,fillcolor=\"#E2E8F0\",penwidth=1.2,label=\"%zu\"];\n", index, node->frequency);
+            else
+                fprintf(output, "  n%zu [shape=ellipse,style=filled,fillcolor=\"#F1F5F9\",label=\"%zu\"];\n", index, node->frequency);
+            if (included[node->left]) fprintf(output, "  n%zu -> n%d [label=\"0\"];\n", index, node->left);
+            if (included[node->right]) fprintf(output, "  n%zu -> n%d [label=\"1\"];\n", index, node->right);
         }
     }
     return fputs("}\n", output) == EOF ? HUFFMAN_ERROR_INVALID_ARGUMENT : HUFFMAN_OK;
