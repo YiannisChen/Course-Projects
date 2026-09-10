@@ -77,8 +77,11 @@ def calculate_grid_features(
             'AgeGroup': 'most_common_age_group'
         })
         
-        # Remove any remaining rows with NaN values
-        grid_features = grid_features.dropna()
+        # Keep cells that can be clustered and placed on the map even when a
+        # descriptive field, such as average victim age, is unavailable.
+        grid_features = grid_features.dropna(
+            subset=['accident_count', 'weekend_ratio', 'grid_lat', 'grid_lon']
+        )
         
         logger.info("Grid features calculated successfully")
         return grid_features
@@ -90,7 +93,7 @@ def calculate_grid_features(
 # Create feature matrix for clustering
 def create_feature_matrix(
     grid_features: pd.DataFrame,
-    features: List[str] = ['accident_count', 'weekend_ratio', 'peak_hour']
+    features: List[str] = ['accident_count', 'weekend_ratio']
 ) -> Tuple[np.ndarray, List[str]]:
     
     try:

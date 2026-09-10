@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from traffic_hotspots.visualization import create_cluster_map, create_heatmap, create_record_cluster_map
+from traffic_collision_analysis.visualization import create_cluster_map, create_heatmap, create_record_cluster_map
 
 
 def _grid_features():

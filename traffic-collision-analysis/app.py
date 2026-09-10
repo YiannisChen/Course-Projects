@@ -6,22 +6,10 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from traffic_hotspots.clustering import perform_clustering, perform_kmeans
-from traffic_hotspots.data_preparation import preprocess_data
-from traffic_hotspots.descriptive_analysis import (
-    age_distribution,
-    area_summary,
-    category_summary,
-    day_summary,
-    hourly_summary,
-    kmeans_cluster_profile,
-    time_period_summary,
-    weekday_weekend_daily_averages,
-    weekday_weekend_hourly_summary,
-)
-from traffic_hotspots.feature_engineering import calculate_grid_features, create_feature_matrix, prepare_individual_features
-from traffic_hotspots.model_evaluation import evaluate_dbscan_grid, evaluate_kmeans_sample, local_eps_stability
-from traffic_hotspots.visualization import create_cluster_map, create_heatmap, create_record_cluster_map
+from traffic_collision_analysis.clustering import perform_clustering, perform_kmeans
+from traffic_collision_analysis.data_preparation import preprocess_data
+from traffic_collision_analysis.feature_engineering import calculate_grid_features, create_feature_matrix, prepare_individual_features
+from traffic_collision_analysis.visualization import create_cluster_map, create_heatmap, create_record_cluster_map
 
 
 logging.basicConfig(level=logging.INFO)
@@ -116,85 +104,6 @@ def run_dbscan(grid_data: pd.DataFrame, epsilon: float, min_samples: int) -> pd.
     return result
 
 
-@st.cache_data(show_spinner=False)
-def dbscan_parameter_evidence(grid_data: pd.DataFrame) -> pd.DataFrame:
-    """Evaluate a compact, local DBSCAN matrix on the app's grid features."""
-    features, _ = create_feature_matrix(grid_data, features=["accident_count", "weekend_ratio"])
-    eps_values = [0.15, 0.20, 0.225, 0.25, 0.275, 0.30, 0.35, 0.40]
-    min_samples_values = [3, 5, 7, 10]
-    evidence, labels_by_setting = evaluate_dbscan_grid(
-        features,
-        grid_data[["grid_lat", "grid_lon"]].to_numpy(),
-        eps_values,
-        min_samples_values,
-    )
-    stability = local_eps_stability(labels_by_setting, eps_values)
-    evidence["local_stability_ari"] = [stability[(row.eps, row.min_samples)] for row in evidence.itertuples(index=False)]
-    return evidence.sort_values(["min_samples", "eps"]).reset_index(drop=True)
-
-
-@st.cache_data(show_spinner=False)
-def kmeans_model_evidence(records: pd.DataFrame) -> pd.DataFrame:
-    """Evaluate candidate K values on one deterministic record sample."""
-    sample = records.sample(n=min(10_000, len(records)), random_state=42)
-    features, _ = prepare_individual_features(sample)
-    return evaluate_kmeans_sample(features, list(range(2, 13)) + [16, 20])
-
-
-def render_descriptive(dataset: pd.DataFrame) -> None:
-    filtered, years = year_controls(dataset)
-    st.caption(f"Descriptive summaries for {len(filtered):,} valid records selected from {years[0]}–{years[1]}. Counts are collision records, not exposure-adjusted risk.")
-    areas_tab, time_tab, profile_tab = st.tabs(["Where", "When", "Record Profile"])
-
-    with areas_tab:
-        areas = area_summary(filtered)
-        st.subheader("Top 10 Areas by Collision Records")
-        st.caption("Uses the source dataset’s `Area Name` field. This is a record count, not a safety or risk ranking.")
-        chart = px.bar(areas.sort_values("Records"), x="Records", y="Area Name", orientation="h", text="Share", labels={"Share": "Share of selected records (%)"})
-        chart.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-        st.plotly_chart(chart, width="stretch")
-        st.dataframe(areas, width="stretch", hide_index=True)
-
-    with time_tab:
-        hourly = hourly_summary(filtered)
-        peak = hourly.loc[hourly["Records"].idxmax()]
-        top_hours = hourly.nlargest(3, "Records")
-        st.metric("Peak Hour", f"{int(peak['Hour']):02d}:00", f"{int(peak['Records']):,} records ({peak['Share']:.1f}%)")
-        st.caption("Top three hours: " + ", ".join(f"{int(row.Hour):02d}:00 ({int(row.Records):,})" for row in top_hours.itertuples()))
-        st.plotly_chart(px.bar(hourly, x="Hour", y="Records", hover_data=["Share"], title="Hourly Collision-Record Distribution"), width="stretch")
-        left, right = st.columns(2)
-        with left:
-            st.dataframe(time_period_summary(filtered), width="stretch", hide_index=True)
-        with right:
-            days = day_summary(filtered)
-            st.plotly_chart(px.bar(days, x="Day", y="Records", hover_data=["Share"], title="Records by Day of Week"), width="stretch")
-            averages = weekday_weekend_daily_averages(filtered)
-            st.caption(f"Average records per weekday: {averages['weekday_daily_average']:,.1f}; per weekend day: {averages['weekend_daily_average']:,.1f}.")
-        profiles = weekday_weekend_hourly_summary(filtered)
-        st.plotly_chart(px.line(profiles, x="Hour", y="Share within Day Type", color="Day Type", markers=True, title="Weekday vs Weekend Hourly Profile (share within each day type)"), width="stretch")
-
-    with profile_tab:
-        ages, coverage = age_distribution(filtered)
-        columns = st.columns(4)
-        columns[0].metric("Valid Ages", f"{coverage['valid_age_records']:,}")
-        columns[1].metric("Missing / Invalid", f"{coverage['missing_or_invalid_records']:,}")
-        columns[2].metric("Valid-Age Share", f"{coverage['valid_age_share']:.1f}%")
-        columns[3].metric("Median Valid Age", coverage["median_age"] if coverage["median_age"] is not None else "Not available")
-        st.caption("Age summaries use original plausible ages 1–99 only; imputed clustering ages are excluded.")
-        st.plotly_chart(px.bar(ages, x="Age Group", y="Records", hover_data=["Share of Valid Ages"], title="Victim Age Groups Among Valid Ages"), width="stretch")
-        with st.expander("Raw victim-sex and descent codes"):
-            st.caption("Codes are shown as provided by the source data. Frequencies describe records with known values and do not indicate individual risk.")
-            sex, sex_unknown = category_summary(filtered, "Victim Sex")
-            descent, descent_unknown = category_summary(filtered, "Victim Descent")
-            left, right = st.columns(2)
-            with left:
-                st.markdown(f"**Victim Sex codes** — unknown/missing: {sex_unknown:.1f}%")
-                st.dataframe(sex, width="stretch", hide_index=True)
-            with right:
-                st.markdown(f"**Victim Descent codes** — unknown/missing: {descent_unknown:.1f}%")
-                st.dataframe(descent, width="stretch", hide_index=True)
-
-
 def render_dbscan(dataset: pd.DataFrame) -> None:
     grid_data, epsilon, min_samples, _, years = grid_controls(dataset)
     clustered = run_dbscan(grid_data, epsilon, min_samples)
@@ -215,10 +124,6 @@ def render_dbscan(dataset: pd.DataFrame) -> None:
         summary = grid_cluster_summary(clustered)
         st.dataframe(summary, width="stretch", hide_index=True)
         st.plotly_chart(px.bar(summary, x="Cluster", y="Total_Collisions", title="Collisions per Grid Pattern Cluster"), width="stretch")
-    with st.expander("DBSCAN parameter evidence"):
-        st.caption("Metrics use the same standardized grid-feature distance as the map. Silhouette and Davies–Bouldin exclude DBSCAN noise; local stability is mean ARI against adjacent eps values at the same minimum-samples value, on cells non-noise in both runs.")
-        with st.spinner("Evaluating the compact DBSCAN parameter matrix..."):
-            st.dataframe(dbscan_parameter_evidence(grid_data), width="stretch", hide_index=True)
 
 
 def render_kmeans(dataset: pd.DataFrame) -> None:
@@ -234,17 +139,11 @@ def render_kmeans(dataset: pd.DataFrame) -> None:
     st.subheader("Visualization")
     view = st.radio("View", ["Record Pattern Map", "Cluster Summary"], horizontal=True, label_visibility="collapsed")
     if view == "Record Pattern Map":
-        st.caption("A deterministic 5,000-record display sample keeps the map readable; clustering uses all uploaded records.")
+        st.caption("A deterministic 5,000-record display sample keeps the map readable; clustering uses all selected records.")
         render_figure(create_record_cluster_map, clustered.sample(n=min(5_000, len(clustered)), random_state=42))
     else:
         st.caption("Descriptive summaries of record-level exploratory clusters.")
         st.dataframe(record_cluster_summary(clustered), width="stretch", hide_index=True)
-        st.markdown("**Profile fields that make missing age explicit**")
-        st.dataframe(kmeans_cluster_profile(clustered), width="stretch", hide_index=True)
-    with st.expander("K-Means model evidence"):
-        st.caption("Inertia, silhouette, Calinski–Harabasz, and Davies–Bouldin are evaluated on one deterministic sample of up to 10,000 selected records. Missing-age status is retained in profiles but excluded from clustering distance. Higher silhouette/Calinski–Harabasz and lower Davies–Bouldin are favorable, but K=2 and a more interpretable multi-group K may reasonably differ.")
-        with st.spinner("Evaluating candidate K values on a deterministic sample..."):
-            st.dataframe(kmeans_model_evidence(dataset), width="stretch", hide_index=True)
 
 
 def render_compare(dataset: pd.DataFrame) -> None:
@@ -293,11 +192,9 @@ def main() -> None:
 
     st.sidebar.success("Dataset loaded")
     st.sidebar.caption(f"{len(dataset):,} valid records")
-    algorithm = st.sidebar.selectbox("Clustering Algorithm", ["Overview / Descriptive Patterns", "DBSCAN (Grid Patterns)", "K-Means (Record Patterns)", "Compare Grid Clustering"])
+    algorithm = st.sidebar.selectbox("Clustering Algorithm", ["DBSCAN (Grid Patterns)", "K-Means (Record Patterns)", "Compare Grid Clustering"])
     try:
-        if algorithm == "Overview / Descriptive Patterns":
-            render_descriptive(dataset)
-        elif algorithm == "DBSCAN (Grid Patterns)":
+        if algorithm == "DBSCAN (Grid Patterns)":
             render_dbscan(dataset)
         elif algorithm == "K-Means (Record Patterns)":
             render_kmeans(dataset)

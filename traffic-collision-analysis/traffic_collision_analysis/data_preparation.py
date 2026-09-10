@@ -35,7 +35,6 @@ def load_data(file_path):
         logger.error(f"Error loading data: {str(e)}")
         raise
 
-
 def format_time_occurred(value):
     """Normalize a Time Occurred cell to HHMM, or None if it is not a valid clock time."""
     if value is None:
@@ -124,13 +123,4 @@ def preprocess_data(file_path):
         return df
     except Exception as e:
         logger.error(f"Error in preprocessing pipeline: {str(e)}")
-        raise
-
-
-def save_processed_data(df, output_path):
-    try:
-        df.to_csv(output_path, index=False)
-        logger.info(f"Processed data saved to {output_path}")
-    except Exception as e:
-        logger.error(f"Error saving processed data: {str(e)}")
         raise

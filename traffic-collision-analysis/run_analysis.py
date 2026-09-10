@@ -1,4 +1,4 @@
-"""Run the existing traffic-hotspot workflow against a local CSV file."""
+"""Run traffic collision pattern analysis against a local CSV file."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from traffic_hotspots.clustering import perform_clustering, perform_kmeans
-from traffic_hotspots.data_preparation import preprocess_data
-from traffic_hotspots.feature_engineering import calculate_grid_features, create_feature_matrix
+from traffic_collision_analysis.clustering import perform_clustering, perform_kmeans
+from traffic_collision_analysis.data_preparation import preprocess_data
+from traffic_collision_analysis.feature_engineering import calculate_grid_features, create_feature_matrix
 
 REQUIRED_COLUMNS = {
     "DR Number", "Date Occurred", "Time Occurred", "Location", "Victim Age",
@@ -52,7 +52,7 @@ def analyze_file(path: str | Path, algorithm: str = "kmeans", n_clusters: int = 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run traffic hotspot clustering on a CSV file.")
+    parser = argparse.ArgumentParser(description="Run traffic collision clustering on a CSV file.")
     parser.add_argument("csv_path", type=Path)
     parser.add_argument("--algorithm", choices=("kmeans", "dbscan"), default="kmeans")
     parser.add_argument("--n-clusters", type=int, default=2)

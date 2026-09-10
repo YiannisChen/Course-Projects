@@ -10,18 +10,19 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from run_analysis import analyze_file, validate_required_columns
-from traffic_hotspots.clustering import perform_clustering, perform_kmeans
-from traffic_hotspots.data_preparation import (
+from traffic_collision_analysis.clustering import perform_clustering, perform_kmeans
+from traffic_collision_analysis.data_preparation import (
     clean_coordinates,
     extract_temporal_features,
     format_time_occurred,
     preprocess_data,
 )
-from traffic_hotspots.feature_engineering import (
+from traffic_collision_analysis.feature_engineering import (
     calculate_grid_features,
     create_feature_matrix,
     prepare_individual_features,
 )
+from traffic_collision_analysis.clustering import combine_dbscan_features
 
 FIXTURE = PROJECT_ROOT / "examples" / "sample_collisions.csv"
 
@@ -144,13 +145,43 @@ def test_individual_features_encode_circular_time_and_missing_age():
     assert np.isfinite(features).all()
 
 
-def test_individual_features_can_exclude_missing_age_indicator_from_distance_features():
+def test_individual_features_exclude_missing_age_indicator_by_default():
     prepared = preprocess_data(FIXTURE)
     prepared.loc[prepared.index[0], "Victim Age"] = np.nan
 
-    _, names = prepare_individual_features(prepared, include_age_missing=False)
+    _, names = prepare_individual_features(prepared)
 
     assert "AgeMissing" not in names
+
+
+def test_dbscan_combined_features_apply_half_weight_to_standardized_coordinates():
+    combined = combine_dbscan_features(
+        np.array([[1.0, 0.0], [2.0, 1.0]]),
+        np.array([[34.0, -118.2], [34.1, -118.3]]),
+    )
+
+    assert np.allclose(combined[:, 2:].std(axis=0), [0.5, 0.5])
+
+
+def test_grid_features_keep_valid_cell_when_descriptive_average_age_is_missing():
+    records = pd.DataFrame(
+        {
+            "DR Number": [1],
+            "Latitude": [34.05],
+            "Longitude": [-118.25],
+            "Victim Age": [np.nan],
+            "IsWeekend": [0],
+            "Hour": [8],
+            "AgeGroupNum": [0],
+            "AgeGroup": ["Unknown"],
+        }
+    )
+
+    grid = calculate_grid_features(records)
+
+    assert len(grid) == 1
+    assert pd.isna(grid.loc[0, "avg_victim_age"])
+    assert grid.loc[0, "accident_count"] == 1
 
 
 def test_validate_required_columns_reports_missing_names():

@@ -38,8 +38,10 @@ def test_interface_requires_an_uploaded_file_and_has_no_local_dataset_fallback()
     assert 'Upload a compatible LA traffic-collision CSV to begin the analysis.' in APP
 
 
-def test_interface_includes_descriptive_patterns_and_model_guidance_views():
-    assert 'Overview / Descriptive Patterns' in APP
-    assert 'Top 10 Areas by Collision Records' in APP
-    assert 'DBSCAN parameter evidence' in APP
-    assert 'K-Means model evidence' in APP
+def test_interface_restores_the_three_clustering_modes_without_dashboard_views():
+    assert '"DBSCAN (Grid Patterns)", "K-Means (Record Patterns)", "Compare Grid Clustering"' in APP
+    assert 'Overview / Descriptive Patterns' not in APP
+    assert 'Top 10 Areas by Collision Records' not in APP
+    assert 'Where", "When", "Record Profile' not in APP
+    assert 'DBSCAN parameter evidence' not in APP
+    assert 'K-Means model evidence' not in APP
